@@ -16,7 +16,16 @@ public class ItemClientController {
         return webClient.get().uri("/v1/items")
                 .retrieve()
                 .bodyToFlux(Item.class)
-                .log("Item in client project");
+                .log("Item in client project retrieve");
+    }
+
+    @GetMapping("/client/exchange")
+    public Flux<Item> getAllItemsUsingExchange() {
+        return webClient.get().uri("/v1/items")
+                .exchange()
+                .flatMapMany(clientResponse -> clientResponse.bodyToFlux(Item.class))
+                .log("Item in client project exchange");
+
     }
 
 }
