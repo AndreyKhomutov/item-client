@@ -3,7 +3,9 @@ package com.learnreactivespring.controller;
 import com.learnreactivespring.domain.Item;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -65,6 +67,20 @@ public class ItemClientController {
                 .retrieve()
                 .bodyToMono(Item.class)
                 .log("Item in client project insert single item");
+    }
+
+    @PutMapping("/client/updateItem/{id}")
+    public Mono<Item> updateItem(@PathVariable String id,
+                                 @RequestBody Item item) {
+
+        Mono<Item> itemMono = Mono.just(item);
+
+        return webClient.put().uri("/v1/items/{id}", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(itemMono, Item.class)
+                .retrieve()
+                .bodyToMono(Item.class)
+                .log("Item in client project update single item");
     }
 
 }
