@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -16,7 +17,14 @@ import reactor.core.publisher.Mono;
 @RestController
 public class ItemClientController {
 
-    WebClient webClient = WebClient.create("http://localhost:8080");
+    WebClient webClient = WebClient.
+            builder().
+            filters(exchangeFilterFunctions -> {
+                exchangeFilterFunctions.add(logRequest());
+                exchangeFilterFunctions.add(logResponse());
+            })
+            .baseUrl("http://localhost:8080")
+            .build();
 
     @GetMapping("/client/retrieve")
     public Flux<Item> getAllItemsUsingRetrieve() {
@@ -91,6 +99,40 @@ public class ItemClientController {
                 .retrieve()
                 .bodyToMono(Void.class)
                 .log("Item in client project delete single item");
+    }
+
+    ExchangeFilterFunction logRequest() {
+        return ExchangeFilterFunction.ofRequestProcessor(clientRequest -> {
+            StringBuilder sb = new StringBuilder("Request: \n");
+            sb.append(clientRequest.body().toString() + "\n");
+            clientRequest
+                    .headers()
+                    .forEach((name, values) -> values.forEach(value -> sb.append("headerName: " + name + " header value: " + value)));
+            System.out.println(sb.toString());
+            return Mono.just(clientRequest);
+        });
+    }
+
+    ExchangeFilterFunction logResponse() {
+        return ExchangeFilterFunction.ofResponseProcessor(clientResponse -> {
+            StringBuilder sb = new StringBuilder("Response: \n")
+                    .append("Status: ")
+                    .append(clientResponse.rawStatusCode());
+            clientResponse
+                    .headers()
+                    .asHttpHeaders()
+                    .forEach((key, value1) -> value1.forEach(value -> sb
+                            .append("\n")
+                            .append(key)
+                            .append(":")
+                            .append(value)));
+
+            sb.append(" \n body: ");
+
+            System.out.println(sb.toString());
+
+            return Mono.just(clientResponse);
+        });
     }
 
 }
